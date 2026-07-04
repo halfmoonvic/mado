@@ -85,6 +85,7 @@ pub struct Shell {
     title: String,
     tokens: Tokens,
     view: Box<dyn DialogView>,
+    deadline: Option<std::time::Instant>,
 }
 
 impl Shell {
@@ -259,6 +260,15 @@ impl eframe::App for Shell {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
 
+        if let Some(deadline) = self.deadline {
+            let now = std::time::Instant::now();
+            if now >= deadline {
+                self.finish(&ctx, Outcome::Timeout);
+                return;
+            }
+            ctx.request_repaint_after(deadline - now);
+        }
+
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.finish(&ctx, Outcome::Cancel);
             return;
@@ -368,11 +378,15 @@ pub fn run(cli: Cli) -> i32 {
             theme::install_fonts(&cc.egui_ctx, tokens.font_family.as_deref());
             theme::apply(&cc.egui_ctx, &tokens);
             let view = build_view(&cli, prefetched, &cc.egui_ctx);
+            let deadline = cli
+                .timeout
+                .map(|secs| std::time::Instant::now() + std::time::Duration::from_secs(secs));
             Ok(Box::new(Shell {
                 outcome: app_outcome,
                 title,
                 tokens,
                 view,
+                deadline,
             }))
         }),
     );

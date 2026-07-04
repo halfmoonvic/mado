@@ -6,7 +6,6 @@ pub enum Outcome {
     /// Cancelled (Esc, or window closed while a stream was still running).
     Cancel,
     /// Closed automatically by --timeout.
-    #[allow(dead_code)]
     Timeout,
 }
 
