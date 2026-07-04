@@ -22,11 +22,12 @@ impl MessageView {
         }
     }
 
-    fn icon(&self, t: &Tokens) -> (&'static str, Color32) {
+    fn icon(&self, t: &Tokens) -> (Option<&'static str>, Color32) {
         match self.kind {
-            DialogKind::Warning => ("!", t.warning),
-            DialogKind::Error => ("✕", t.danger),
-            _ => ("i", t.accent),
+            DialogKind::Warning => (Some("!"), t.warning),
+            // The cross is painted as a vector shape (glyph coverage varies).
+            DialogKind::Error => (None, t.danger),
+            _ => (Some("i"), t.accent),
         }
     }
 }
@@ -45,13 +46,17 @@ impl DialogView for MessageView {
                 let (rect, _) = ui.allocate_exact_size(vec2(22.0, 22.0), Sense::hover());
                 ui.painter()
                     .circle_stroke(rect.center(), 10.0, Stroke::new(1.5, color));
-                ui.painter().text(
-                    rect.center(),
-                    Align2::CENTER_CENTER,
-                    glyph,
-                    FontId::proportional(13.0),
-                    color,
-                );
+                if let Some(glyph) = glyph {
+                    ui.painter().text(
+                        rect.center(),
+                        Align2::CENTER_CENTER,
+                        glyph,
+                        FontId::proportional(13.0),
+                        color,
+                    );
+                } else {
+                    super::paint_cross(ui.painter(), rect.center(), 3.5, Stroke::new(1.5, color));
+                }
 
                 ui.add_space(4.0);
                 ui.vertical(|ui| {

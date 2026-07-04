@@ -14,6 +14,54 @@ use crate::cli::{Cli, DialogKind};
 use crate::exit::Outcome;
 use crate::theme::{self, Tokens};
 
+/// Four-point spark (✦) drawn as two overlapping diamonds — system fonts
+/// often lack the glyph.
+pub(crate) fn paint_spark(
+    painter: &egui::Painter,
+    center: egui::Pos2,
+    radius: f32,
+    color: egui::Color32,
+) {
+    let w = radius * 0.32;
+    let vertical = vec![
+        egui::pos2(center.x, center.y - radius),
+        egui::pos2(center.x + w, center.y),
+        egui::pos2(center.x, center.y + radius),
+        egui::pos2(center.x - w, center.y),
+    ];
+    let horizontal = vec![
+        egui::pos2(center.x - radius, center.y),
+        egui::pos2(center.x, center.y - w),
+        egui::pos2(center.x + radius, center.y),
+        egui::pos2(center.x, center.y + w),
+    ];
+    painter.add(egui::Shape::convex_polygon(vertical, color, Stroke::NONE));
+    painter.add(egui::Shape::convex_polygon(horizontal, color, Stroke::NONE));
+}
+
+/// Close cross (✕) drawn with line segments, for the same reason.
+pub(crate) fn paint_cross(
+    painter: &egui::Painter,
+    center: egui::Pos2,
+    radius: f32,
+    stroke: Stroke,
+) {
+    painter.line_segment(
+        [
+            center + vec2(-radius, -radius),
+            center + vec2(radius, radius),
+        ],
+        stroke,
+    );
+    painter.line_segment(
+        [
+            center + vec2(-radius, radius),
+            center + vec2(radius, -radius),
+        ],
+        stroke,
+    );
+}
+
 /// A dialog body rendered inside the shared window shell.
 pub trait DialogView {
     /// Render the dialog content; return `Some` to close the window.
@@ -120,9 +168,19 @@ impl Shell {
             );
         }
 
-        // Spark icon + title.
+        // Spark icon + title. The default icon is painted as a vector shape;
+        // a custom theme icon falls back to a text glyph.
         let mut text_x = rect.left() + 16.0;
-        if !t.titlebar_icon.is_empty() {
+        if t.titlebar_icon == "✦" {
+            let radius = 7.0;
+            paint_spark(
+                ui.painter(),
+                egui::pos2(text_x + radius, rect.center().y),
+                radius,
+                t.accent,
+            );
+            text_x += radius * 2.0 + 9.0;
+        } else if !t.titlebar_icon.is_empty() {
             let icon_rect = ui.painter().text(
                 egui::pos2(text_x, rect.center().y),
                 Align2::LEFT_CENTER,
@@ -165,13 +223,14 @@ impl Shell {
                 theme::titlebar_hover_fill(t),
             );
         }
-        ui.painter().text(
+        let cross_color = t
+            .titlebar_fg
+            .gamma_multiply(if close.hovered() { 1.0 } else { 0.55 });
+        paint_cross(
+            ui.painter(),
             button_rect.center(),
-            Align2::CENTER_CENTER,
-            "✕",
-            FontId::new(13.0, FontFamily::Proportional),
-            t.titlebar_fg
-                .gamma_multiply(if close.hovered() { 1.0 } else { 0.55 }),
+            4.5,
+            Stroke::new(1.6, cross_color),
         );
         if close.clicked() {
             result = Some(self.close_outcome());
