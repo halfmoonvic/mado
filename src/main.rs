@@ -3,6 +3,7 @@
 mod app;
 mod cli;
 mod exit;
+mod theme;
 
 use clap::Parser;
 
