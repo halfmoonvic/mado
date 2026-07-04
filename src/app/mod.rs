@@ -1,3 +1,4 @@
+mod message;
 mod text_info;
 
 use std::sync::Arc;
@@ -21,15 +22,6 @@ pub trait DialogView {
     /// Whether a data stream is still running (closing then means Cancel).
     fn stream_active(&self) -> bool {
         false
-    }
-}
-
-struct Placeholder;
-
-impl DialogView for Placeholder {
-    fn ui(&mut self, ui: &mut egui::Ui, _tokens: &Tokens) -> Option<Outcome> {
-        ui.label("mado — dialog content coming next");
-        None
     }
 }
 
@@ -76,7 +68,14 @@ fn build_view(cli: &Cli, prefetched: Option<String>, ctx: &egui::Context) -> Box
                 ))
             }
         }
-        DialogKind::Info | DialogKind::Warning | DialogKind::Error => Box::new(Placeholder),
+        kind @ (DialogKind::Info | DialogKind::Warning | DialogKind::Error) => {
+            let ok_label = cli.ok_label.clone().unwrap_or_else(|| "OK".to_owned());
+            Box::new(message::MessageView::new(
+                kind,
+                prefetched.unwrap_or_default(),
+                ok_label,
+            ))
+        }
     }
 }
 
