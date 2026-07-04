@@ -33,27 +33,50 @@ impl DialogView for Placeholder {
     }
 }
 
-/// Build the dialog view for the parsed command line.
-fn build_view(cli: &Cli) -> Result<Box<dyn DialogView>, String> {
+/// Static content resolved before the window opens, so that an unreadable
+/// --filename fails fast on stderr instead of flashing a window.
+fn prefetch_content(cli: &Cli) -> Result<Option<String>, String> {
+    if cli.dialog_kind() == DialogKind::TextInfo
+        && let Some(path) = &cli.filename
+    {
+        return std::fs::read_to_string(path)
+            .map(Some)
+            .map_err(|err| format!("cannot read {}: {err}", path.display()));
+    }
+    Ok(cli.text.clone())
+}
+
+/// Build the dialog view for the parsed command line. Needs the egui context
+/// so streaming sources can wake the UI.
+fn build_view(cli: &Cli, prefetched: Option<String>, ctx: &egui::Context) -> Box<dyn DialogView> {
     match cli.dialog_kind() {
         DialogKind::TextInfo => {
-            let content = if let Some(text) = &cli.text {
-                text.clone()
-            } else if let Some(path) = &cli.filename {
-                std::fs::read_to_string(path)
-                    .map_err(|err| format!("cannot read {}: {err}", path.display()))?
-            } else {
-                // --watch and stdin streaming land in the next increment.
-                String::new()
-            };
+            let wrap = !cli.no_wrap;
             let ok_label = cli.ok_label.clone().unwrap_or_else(|| "Close".to_owned());
-            Ok(Box::new(text_info::TextInfoView::new(
-                content,
-                !cli.no_wrap,
-                ok_label,
-            )))
+            if let Some(content) = prefetched {
+                Box::new(text_info::TextInfoView::new_static(content, wrap, ok_label))
+            } else if let Some(path) = &cli.watch {
+                let interval = std::time::Duration::from_millis(cli.poll_interval.max(16));
+                let source = crate::source::spawn_watch(ctx.clone(), path.clone(), interval);
+                Box::new(text_info::TextInfoView::new_streaming(
+                    source,
+                    false,
+                    cli.initial.clone(),
+                    wrap,
+                    ok_label,
+                ))
+            } else {
+                let source = crate::source::spawn_stdin(ctx.clone());
+                Box::new(text_info::TextInfoView::new_streaming(
+                    source,
+                    true,
+                    cli.initial.clone(),
+                    wrap,
+                    ok_label,
+                ))
+            }
         }
-        DialogKind::Info | DialogKind::Warning | DialogKind::Error => Ok(Box::new(Placeholder)),
+        DialogKind::Info | DialogKind::Warning | DialogKind::Error => Box::new(Placeholder),
     }
 }
 
@@ -295,7 +318,7 @@ impl eframe::App for Shell {
 }
 
 /// Run the dialog window described by `cli` and return its exit code.
-pub fn run(cli: &Cli) -> i32 {
+pub fn run(cli: Cli) -> i32 {
     let title = cli.title.clone().unwrap_or_else(|| "mado".to_owned());
     let (default_width, default_height) = match cli.dialog_kind() {
         DialogKind::TextInfo => (650.0, 360.0),
@@ -319,8 +342,8 @@ pub fn run(cli: &Cli) -> i32 {
         ..Default::default()
     };
 
-    let view = match build_view(cli) {
-        Ok(view) => view,
+    let prefetched = match prefetch_content(&cli) {
+        Ok(prefetched) => prefetched,
         Err(message) => {
             eprintln!("mado: {message}");
             return 255;
@@ -330,10 +353,6 @@ pub fn run(cli: &Cli) -> i32 {
     // Closing the window without cancelling counts as a normal close (0).
     let outcome = Arc::new(AtomicI32::new(Outcome::Ok.code()));
     let app_outcome = outcome.clone();
-
-    let theme_path = cli.theme.clone();
-    let font = cli.font.clone();
-    let font_size = cli.font_size;
 
     let app_name = title.clone();
     let result = eframe::run_native(
@@ -345,9 +364,11 @@ pub fn run(cli: &Cli) -> i32 {
                 .system_theme()
                 .map(|theme| theme == egui::Theme::Dark)
                 .unwrap_or(false);
-            let tokens = theme::resolve(dark, theme_path.as_ref(), font.as_deref(), font_size);
+            let tokens =
+                theme::resolve(dark, cli.theme.as_ref(), cli.font.as_deref(), cli.font_size);
             theme::install_fonts(&cc.egui_ctx, tokens.font_family.as_deref());
             theme::apply(&cc.egui_ctx, &tokens);
+            let view = build_view(&cli, prefetched, &cc.egui_ctx);
             Ok(Box::new(Shell {
                 outcome: app_outcome,
                 title,

@@ -3,12 +3,13 @@
 mod app;
 mod cli;
 mod exit;
+mod source;
 mod theme;
 
 use clap::Parser;
 
 fn main() {
     let cli = cli::Cli::parse();
-    let code = app::run(&cli);
+    let code = app::run(cli);
     std::process::exit(code);
 }
