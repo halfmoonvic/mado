@@ -1,3 +1,5 @@
+mod text_info;
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
@@ -28,6 +30,30 @@ impl DialogView for Placeholder {
     fn ui(&mut self, ui: &mut egui::Ui, _tokens: &Tokens) -> Option<Outcome> {
         ui.label("mado — dialog content coming next");
         None
+    }
+}
+
+/// Build the dialog view for the parsed command line.
+fn build_view(cli: &Cli) -> Result<Box<dyn DialogView>, String> {
+    match cli.dialog_kind() {
+        DialogKind::TextInfo => {
+            let content = if let Some(text) = &cli.text {
+                text.clone()
+            } else if let Some(path) = &cli.filename {
+                std::fs::read_to_string(path)
+                    .map_err(|err| format!("cannot read {}: {err}", path.display()))?
+            } else {
+                // --watch and stdin streaming land in the next increment.
+                String::new()
+            };
+            let ok_label = cli.ok_label.clone().unwrap_or_else(|| "Close".to_owned());
+            Ok(Box::new(text_info::TextInfoView::new(
+                content,
+                !cli.no_wrap,
+                ok_label,
+            )))
+        }
+        DialogKind::Info | DialogKind::Warning | DialogKind::Error => Ok(Box::new(Placeholder)),
     }
 }
 
@@ -293,6 +319,14 @@ pub fn run(cli: &Cli) -> i32 {
         ..Default::default()
     };
 
+    let view = match build_view(cli) {
+        Ok(view) => view,
+        Err(message) => {
+            eprintln!("mado: {message}");
+            return 255;
+        }
+    };
+
     // Closing the window without cancelling counts as a normal close (0).
     let outcome = Arc::new(AtomicI32::new(Outcome::Ok.code()));
     let app_outcome = outcome.clone();
@@ -318,7 +352,7 @@ pub fn run(cli: &Cli) -> i32 {
                 outcome: app_outcome,
                 title,
                 tokens,
-                view: Box::new(Placeholder),
+                view,
             }))
         }),
     );
