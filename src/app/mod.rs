@@ -139,6 +139,7 @@ fn build_view(cli: &Cli, prefetched: Option<String>, ctx: &egui::Context) -> Box
 pub struct Shell {
     outcome: Arc<AtomicI32>,
     title: String,
+    badge: &'static str,
     tokens: Tokens,
     view: Box<dyn DialogView>,
     deadline: Option<std::time::Instant>,
@@ -176,9 +177,27 @@ impl Shell {
             );
         }
 
-        // Spark icon + title. The default icon is painted as a vector shape;
-        // a custom theme icon falls back to a text glyph.
-        let mut text_x = rect.left() + 16.0;
+        // Subcommand badge, then the optional theme icon, then the title.
+        let mut text_x = rect.left() + 12.0;
+        let badge_font = FontId::new(11.0, FontFamily::Monospace);
+        let galley = ui
+            .painter()
+            .layout_no_wrap(self.badge.to_owned(), badge_font, t.accent);
+        let badge_rect = Rect::from_center_size(
+            egui::pos2(text_x + galley.size().x / 2.0 + 7.0, rect.center().y - 0.5),
+            galley.size() + vec2(14.0, 4.0),
+        );
+        ui.painter().rect_filled(
+            badge_rect,
+            CornerRadius::same(4),
+            t.accent.gamma_multiply(0.12),
+        );
+        ui.painter()
+            .galley(badge_rect.min + vec2(7.0, 2.0), galley, t.accent);
+        text_x = badge_rect.right() + 8.0;
+
+        // The default spark is painted as a vector shape; a custom theme
+        // icon falls back to a text glyph.
         if t.titlebar_icon == "✦" {
             let radius = 7.0;
             paint_spark(
@@ -263,6 +282,36 @@ impl Shell {
                 Stroke::new(t.footer_separator_width, t.footer_separator_color),
             );
         }
+
+        // Key hint on the left: a kbd chip plus what Esc does.
+        let chip_font = FontId::new(10.5, FontFamily::Monospace);
+        let galley = ui
+            .painter()
+            .layout_no_wrap("Esc".to_owned(), chip_font, t.muted);
+        let chip_rect = Rect::from_center_size(
+            egui::pos2(
+                rect.left() + 12.0 + galley.size().x / 2.0 + 5.0,
+                rect.center().y,
+            ),
+            galley.size() + vec2(10.0, 4.0),
+        );
+        ui.painter()
+            .rect_filled(chip_rect, CornerRadius::same(4), t.window_bg);
+        ui.painter().rect_stroke(
+            chip_rect,
+            CornerRadius::same(4),
+            Stroke::new(1.0, t.input_border_color),
+            egui::StrokeKind::Inside,
+        );
+        ui.painter()
+            .galley(chip_rect.min + vec2(5.0, 2.0), galley, t.muted);
+        ui.painter().text(
+            egui::pos2(chip_rect.right() + 6.0, rect.center().y),
+            Align2::LEFT_CENTER,
+            "Cancel",
+            FontId::new(11.0, FontFamily::Proportional),
+            t.muted,
+        );
 
         let inner = Rect::from_min_max(
             egui::pos2(rect.left() + 12.0, rect.top()),
@@ -434,6 +483,12 @@ impl eframe::App for Shell {
 /// Run the dialog window described by `cli` and return its exit code.
 pub fn run(cli: Cli) -> i32 {
     let title = cli.title.clone().unwrap_or_else(|| "mado".to_owned());
+    let badge = match cli.dialog_kind() {
+        DialogKind::TextInfo => "text",
+        DialogKind::Info => "info",
+        DialogKind::Warning => "warning",
+        DialogKind::Error => "error",
+    };
     let (default_width, default_height) = match cli.dialog_kind() {
         DialogKind::TextInfo => (650.0, 360.0),
         DialogKind::Info | DialogKind::Warning | DialogKind::Error => (380.0, 150.0),
@@ -489,6 +544,7 @@ pub fn run(cli: Cli) -> i32 {
             Ok(Box::new(Shell {
                 outcome: app_outcome,
                 title,
+                badge,
                 tokens,
                 view,
                 deadline,
