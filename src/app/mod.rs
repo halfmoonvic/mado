@@ -202,7 +202,7 @@ impl Shell {
             egui::pos2(text_x, rect.center().y),
             Align2::LEFT_CENTER,
             &self.title,
-            FontId::new(16.0, FontFamily::Name(theme::HEADING_FAMILY.into())),
+            FontId::new(13.0, FontFamily::Proportional),
             t.titlebar_fg,
         );
 

@@ -4,7 +4,6 @@ use egui::{
 };
 
 use super::Tokens;
-use super::fonts::HEADING_FAMILY;
 
 fn corner_radius(radius: f32) -> CornerRadius {
     CornerRadius::same(radius.clamp(0.0, 255.0) as u8)
@@ -76,7 +75,7 @@ pub fn apply(ctx: &egui::Context, t: &Tokens) {
     style.text_styles = [
         (
             TextStyle::Heading,
-            FontId::new(t.heading_size, FontFamily::Name(HEADING_FAMILY.into())),
+            FontId::new(t.heading_size, FontFamily::Proportional),
         ),
         (
             TextStyle::Body,

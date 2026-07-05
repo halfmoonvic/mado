@@ -27,7 +27,7 @@ impl MessageView {
             DialogKind::Warning => (Some("!"), t.warning),
             // The cross is painted as a vector shape (glyph coverage varies).
             DialogKind::Error => (None, t.danger),
-            _ => (Some("i"), t.accent),
+            _ => (Some("i"), t.info),
         }
     }
 }

@@ -9,7 +9,7 @@ use eframe::egui::Color32;
 use serde::Deserialize;
 
 pub use apply::{apply, titlebar_hover_fill};
-pub use fonts::{HEADING_FAMILY, install_fonts};
+pub use fonts::install_fonts;
 
 /// Fully resolved design tokens consumed by the renderer.
 #[derive(Debug, Clone)]
@@ -37,6 +37,7 @@ pub struct Tokens {
     pub foreground: Color32,
     pub muted: Color32,
     pub accent: Color32,
+    pub info: Color32,
     pub warning: Color32,
     pub danger: Color32,
 
@@ -265,6 +266,7 @@ fn merge(tokens: &mut Tokens, file: &ThemeFile) {
         ("foreground", tokens.foreground),
         ("muted", tokens.muted),
         ("accent", tokens.accent),
+        ("info", tokens.info),
         ("warning", tokens.warning),
         ("danger", tokens.danger),
     ]);
@@ -280,6 +282,7 @@ fn merge(tokens: &mut Tokens, file: &ThemeFile) {
     tokens.foreground = palette["foreground"];
     tokens.muted = palette["muted"];
     tokens.accent = palette["accent"];
+    tokens.info = palette["info"];
     tokens.warning = palette["warning"];
     tokens.danger = palette["danger"];
 

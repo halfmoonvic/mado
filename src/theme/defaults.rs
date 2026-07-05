@@ -1,94 +1,114 @@
-//! Built-in default tokens, extracted from the "1c ink header" design
-//! direction (ui concept, light + dark).
+//! Built-in default tokens: the "1b compact tool" design direction on the
+//! zenwritten_light / zenwritten_dark palettes.
 
 use eframe::egui::Color32;
 
 use super::Tokens;
 
-const ACCENT: Color32 = Color32::from_rgb(0xE8, 0x6A, 0x33);
-const INK: Color32 = Color32::from_rgb(0x1C, 0x20, 0x33);
-const PAPER: Color32 = Color32::from_rgb(0xFA, 0xF6, 0xEF);
+// zenwritten_light
+const ACCENT: Color32 = Color32::from_rgb(0xA8, 0x33, 0x4C); // rose
+const FG: Color32 = Color32::from_rgb(0x35, 0x35, 0x35);
+const BG: Color32 = Color32::from_rgb(0xEE, 0xEE, 0xEE);
+const BAR: Color32 = Color32::from_rgb(0xE4, 0xE4, 0xE4); // sunken title/footer bars
+const BORDER: Color32 = Color32::from_rgb(0xB4, 0xB4, 0xB4);
 
 pub fn light() -> Tokens {
     Tokens {
         dark: false,
 
-        window_bg: PAPER,
-        window_radius: 14.0,
-        window_border_color: Color32::from_rgb(0xE8, 0xDF, 0xCE),
+        window_bg: BG,
+        window_radius: 8.0,
+        window_border_color: BORDER,
         window_border_width: 1.0,
-        window_padding: 20.0,
+        window_padding: 14.0,
 
         titlebar_show: true,
-        titlebar_bg: INK,
-        titlebar_fg: PAPER,
-        titlebar_height: 44.0,
-        titlebar_icon: "✦".to_owned(),
-        titlebar_separator_color: Color32::TRANSPARENT,
-        titlebar_separator_width: 0.0,
+        titlebar_bg: BAR,
+        titlebar_fg: FG,
+        titlebar_height: 36.0,
+        titlebar_icon: String::new(),
+        titlebar_separator_color: BORDER,
+        titlebar_separator_width: 1.0,
 
-        footer_bg: PAPER,
-        footer_separator_color: Color32::TRANSPARENT,
-        footer_separator_width: 0.0,
+        footer_bg: BAR,
+        footer_separator_color: BORDER,
+        footer_separator_width: 1.0,
 
-        foreground: INK,
-        muted: Color32::from_rgb(0x5A, 0x64, 0x78),
+        foreground: FG,
+        muted: Color32::from_rgb(0x63, 0x63, 0x63),
         accent: ACCENT,
-        warning: Color32::from_rgb(0xC8, 0x92, 0x33),
-        danger: Color32::from_rgb(0xB0, 0x4A, 0x3A),
+        info: Color32::from_rgb(0x28, 0x64, 0x86), // water
+        warning: Color32::from_rgb(0x94, 0x49, 0x27), // wood
+        danger: ACCENT,
 
         font_family: None,
-        font_size: 14.0,
-        heading_size: 20.0,
+        font_size: 13.0,
+        heading_size: 15.0,
 
-        banner_warning_bg: Color32::from_rgb(0xF5, 0xE6, 0xC6),
-        banner_warning_fg: Color32::from_rgb(0x6E, 0x50, 0x11),
+        banner_warning_bg: Color32::from_rgba_unmultiplied(0x35, 0x35, 0x35, 18), // rgba(53,53,53,0.07)
+        banner_warning_fg: Color32::from_rgb(0x53, 0x53, 0x53),
 
-        input_bg: Color32::from_rgb(0xF3, 0xED, 0xE1),
-        input_border_color: Color32::from_rgb(0xE8, 0xDF, 0xCE),
-        input_radius: 8.0,
-        input_focus_border: ACCENT,
+        input_bg: Color32::from_rgb(0xE7, 0xE7, 0xE7),
+        input_border_color: BORDER,
+        input_radius: 4.0,
+        input_focus_border: Color32::from_rgb(0x28, 0x64, 0x86),
 
-        mono_bg: INK,
-        mono_fg: Color32::from_rgb(0xC6, 0xCC, 0xDB),
+        mono_bg: Color32::from_rgb(0x19, 0x19, 0x19),
+        mono_fg: Color32::from_rgb(0xB4, 0xB4, 0xB4),
 
-        button_radius: 999.0,
-        button_padding: [18.0, 8.0],
+        button_radius: 5.0,
+        button_padding: [12.0, 5.0],
         button_primary_bg: ACCENT,
-        button_primary_fg: PAPER,
-        button_secondary_bg: Color32::TRANSPARENT,
-        button_secondary_border: Color32::from_rgb(0xD8, 0xCC, 0xB4),
-        button_secondary_fg: INK,
+        button_primary_fg: BG,
+        button_secondary_bg: BG,
+        button_secondary_border: BORDER,
+        button_secondary_fg: FG,
     }
 }
 
+// zenwritten_dark
 pub fn dark() -> Tokens {
-    let border = Color32::from_rgba_unmultiplied(0xFA, 0xF6, 0xEF, 31); // rgba(250,246,239,0.12)
+    let accent = Color32::from_rgb(0xDE, 0x6E, 0x7C); // rose
+    let fg = Color32::from_rgb(0xBB, 0xBB, 0xBB);
+    let bg = Color32::from_rgb(0x19, 0x19, 0x19);
+    let bar = Color32::from_rgb(0x15, 0x15, 0x15);
+    // Borders are translucent foreground: rgba(187,187,187,α)
+    let border = |alpha: u8| Color32::from_rgba_unmultiplied(0xBB, 0xBB, 0xBB, alpha);
+
     Tokens {
         dark: true,
 
-        window_bg: Color32::from_rgb(0x1F, 0x23, 0x37),
-        window_border_color: border,
+        window_bg: bg,
+        window_border_color: border(41), // 0.16
 
-        titlebar_bg: Color32::from_rgb(0x16, 0x1A, 0x2B),
+        titlebar_bg: bar,
+        titlebar_fg: fg,
+        titlebar_separator_color: border(31), // 0.12
 
-        footer_bg: Color32::from_rgb(0x1F, 0x23, 0x37),
+        footer_bg: bar,
+        footer_separator_color: border(31),
 
-        foreground: PAPER,
-        muted: Color32::from_rgb(0x8B, 0x94, 0xA6),
+        foreground: fg,
+        muted: Color32::from_rgb(0x8C, 0x8C, 0x8C),
+        accent,
+        info: Color32::from_rgb(0x60, 0x99, 0xC0), // water
+        warning: Color32::from_rgb(0xB7, 0x7E, 0x64), // wood
+        danger: accent,
 
-        banner_warning_bg: Color32::from_rgba_unmultiplied(0xC8, 0x92, 0x33, 36), // rgba(200,146,51,0.14)
-        banner_warning_fg: Color32::from_rgb(0xE3, 0xC2, 0x7E),
+        banner_warning_bg: border(23), // rgba(187,187,187,0.09)
+        banner_warning_fg: Color32::from_rgb(0xA6, 0xA6, 0xA6),
 
-        input_bg: Color32::from_rgb(0x16, 0x1A, 0x2B),
-        input_border_color: border,
+        input_bg: Color32::from_rgb(0x14, 0x14, 0x14),
+        input_border_color: border(38), // 0.15
+        input_focus_border: Color32::from_rgb(0x60, 0x99, 0xC0),
 
-        mono_bg: Color32::from_rgb(0x16, 0x1A, 0x2B),
+        mono_fg: fg,
 
-        warning: Color32::from_rgb(0xE3, 0xC2, 0x7E),
-
-        button_secondary_border: Color32::from_rgba_unmultiplied(0xFA, 0xF6, 0xEF, 64),
-        button_secondary_fg: PAPER,
+        button_primary_bg: accent,
+        button_primary_fg: bg,
+        button_secondary_bg: Color32::TRANSPARENT,
+        button_secondary_border: border(64), // 0.25
+        button_secondary_fg: fg,
 
         ..light()
     }

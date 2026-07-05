@@ -36,21 +36,11 @@ const CJK: &[&str] = &[
 ];
 
 #[cfg(target_os = "windows")]
-const SERIF: &[&str] = &["Fraunces", "Georgia", "Constantia"];
-#[cfg(target_os = "macos")]
-const SERIF: &[&str] = &["Fraunces", "Georgia", "New York"];
-#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
-const SERIF: &[&str] = &["Fraunces", "Noto Serif", "DejaVu Serif"];
-
-#[cfg(target_os = "windows")]
 const MONO: &[&str] = &["JetBrains Mono", "Cascadia Mono", "Consolas"];
 #[cfg(target_os = "macos")]
 const MONO: &[&str] = &["JetBrains Mono", "SF Mono", "Menlo"];
 #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
 const MONO: &[&str] = &["JetBrains Mono", "Noto Sans Mono", "DejaVu Sans Mono"];
-
-/// Family name for headings (serif per the design; falls back to body).
-pub const HEADING_FAMILY: &str = "mado-heading";
 
 /// Install system fonts into the egui context. `family` is the theme /
 /// CLI-requested body font, tried before the platform defaults.
@@ -66,7 +56,6 @@ pub fn install_fonts(ctx: &egui::Context, family: Option<&str>) {
         family.into_iter().chain(BODY.iter().copied()),
     );
     let cjk = load_first(&mut defs, &db, CJK.iter().copied());
-    let serif = load_first(&mut defs, &db, SERIF.iter().copied());
     let mono = load_first(&mut defs, &db, MONO.iter().copied());
 
     let prop = defs.families.entry(FontFamily::Proportional).or_default();
@@ -78,13 +67,6 @@ pub fn install_fonts(ctx: &egui::Context, family: Option<&str>) {
     for name in [&cjk, &mono].into_iter().flatten() {
         mono_family.insert(0, name.clone());
     }
-
-    // Headings: serif first, then the whole proportional stack as fallback.
-    let mut heading = Vec::new();
-    heading.extend(serif.clone());
-    heading.extend(defs.families[&FontFamily::Proportional].iter().cloned());
-    defs.families
-        .insert(FontFamily::Name(HEADING_FAMILY.into()), heading);
 
     ctx.set_fonts(defs);
 }
