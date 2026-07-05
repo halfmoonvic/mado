@@ -84,11 +84,6 @@ impl DialogView for TextInfoView {
     fn ui(&mut self, ui: &mut egui::Ui, t: &Tokens) -> Option<Outcome> {
         self.drain_source();
 
-        let mut result = None;
-
-        let footer_height = 44.0;
-        let text_area_height = (ui.available_height() - footer_height).max(0.0);
-
         let frame = egui::Frame::new()
             .fill(t.input_bg)
             .stroke(Stroke::new(1.0, t.input_border_color))
@@ -97,7 +92,7 @@ impl DialogView for TextInfoView {
 
         let show_placeholder = self.content.is_empty() && self.initial.is_some();
 
-        ui.allocate_ui(egui::vec2(ui.available_width(), text_area_height), |ui| {
+        ui.allocate_ui(ui.available_size(), |ui| {
             frame.show(ui, |ui| {
                 ui.set_min_size(ui.available_size());
                 if show_placeholder {
@@ -129,22 +124,23 @@ impl DialogView for TextInfoView {
             });
         });
 
-        ui.add_space(8.0);
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let close = Button::new(RichText::new(&self.ok_label).color(t.button_primary_fg))
-                .fill(t.button_primary_bg);
-            if ui.add(close).clicked() {
-                result = Some(if self.stream_active {
-                    Outcome::Cancel
-                } else {
-                    Outcome::Ok
-                });
-            }
-            if ui.button("Copy").clicked() {
-                ui.ctx().copy_text(self.content.clone());
-            }
-        });
+        None
+    }
 
+    fn footer(&mut self, ui: &mut egui::Ui, t: &Tokens) -> Option<Outcome> {
+        let mut result = None;
+        let close = Button::new(RichText::new(&self.ok_label).color(t.button_primary_fg))
+            .fill(t.button_primary_bg);
+        if ui.add(close).clicked() {
+            result = Some(if self.stream_active {
+                Outcome::Cancel
+            } else {
+                Outcome::Ok
+            });
+        }
+        if ui.button("Copy").clicked() {
+            ui.ctx().copy_text(self.content.clone());
+        }
         result
     }
 

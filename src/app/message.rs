@@ -34,12 +34,7 @@ impl MessageView {
 
 impl DialogView for MessageView {
     fn ui(&mut self, ui: &mut egui::Ui, t: &Tokens) -> Option<Outcome> {
-        let mut result = None;
-
-        let footer_height = 40.0;
-        let body_height = (ui.available_height() - footer_height).max(0.0);
-
-        ui.allocate_ui(egui::vec2(ui.available_width(), body_height), |ui| {
+        ui.allocate_ui(ui.available_size(), |ui| {
             ui.horizontal_top(|ui| {
                 // Outlined circle icon.
                 let (glyph, color) = self.icon(t);
@@ -69,14 +64,15 @@ impl DialogView for MessageView {
             });
         });
 
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let ok = Button::new(RichText::new(&self.ok_label).color(t.button_primary_fg))
-                .fill(t.button_primary_bg);
-            if ui.add(ok).clicked() {
-                result = Some(Outcome::Ok);
-            }
-        });
+        None
+    }
 
-        result
+    fn footer(&mut self, ui: &mut egui::Ui, t: &Tokens) -> Option<Outcome> {
+        let ok = Button::new(RichText::new(&self.ok_label).color(t.button_primary_fg))
+            .fill(t.button_primary_bg);
+        if ui.add(ok).clicked() {
+            return Some(Outcome::Ok);
+        }
+        None
     }
 }

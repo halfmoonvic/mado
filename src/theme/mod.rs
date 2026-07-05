@@ -30,6 +30,10 @@ pub struct Tokens {
     pub titlebar_separator_color: Color32,
     pub titlebar_separator_width: f32,
 
+    pub footer_bg: Color32,
+    pub footer_separator_color: Color32,
+    pub footer_separator_width: f32,
+
     pub foreground: Color32,
     pub muted: Color32,
     pub accent: Color32,
@@ -129,6 +133,7 @@ struct ThemeFile {
     font: FontSection,
     colors: BTreeMap<String, String>,
     titlebar: TitlebarSection,
+    footer: FooterSection,
     heading: HeadingSection,
     banner: BannerSection,
     input: InputSection,
@@ -159,6 +164,13 @@ struct TitlebarSection {
     icon: Option<String>,
     background: Option<Background>,
     color: Option<String>,
+    separator: Option<BorderSpec>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+struct FooterSection {
+    background: Option<Background>,
     separator: Option<BorderSpec>,
 }
 
@@ -305,6 +317,21 @@ fn merge(tokens: &mut Tokens, file: &ThemeFile) {
             resolve,
         );
         set_opt(&mut tokens.titlebar_separator_width, sep.width);
+    }
+
+    let footer = &file.footer;
+    set_color_opt(
+        &mut tokens.footer_bg,
+        footer.background.as_ref(),
+        resolve_bg,
+    );
+    if let Some(sep) = &footer.separator {
+        set_color_opt(
+            &mut tokens.footer_separator_color,
+            sep.color.as_deref(),
+            resolve,
+        );
+        set_opt(&mut tokens.footer_separator_width, sep.width);
     }
 
     set_opt(&mut tokens.heading_size, file.heading.size);

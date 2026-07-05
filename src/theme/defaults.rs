@@ -27,6 +27,10 @@ pub fn light() -> Tokens {
         titlebar_separator_color: Color32::TRANSPARENT,
         titlebar_separator_width: 0.0,
 
+        footer_bg: PAPER,
+        footer_separator_color: Color32::TRANSPARENT,
+        footer_separator_width: 0.0,
+
         foreground: INK,
         muted: Color32::from_rgb(0x5A, 0x64, 0x78),
         accent: ACCENT,
@@ -67,6 +71,8 @@ pub fn dark() -> Tokens {
         window_border_color: border,
 
         titlebar_bg: Color32::from_rgb(0x16, 0x1A, 0x2B),
+
+        footer_bg: Color32::from_rgb(0x1F, 0x23, 0x37),
 
         foreground: PAPER,
         muted: Color32::from_rgb(0x8B, 0x94, 0xA6),

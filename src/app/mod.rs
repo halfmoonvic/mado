@@ -67,11 +67,19 @@ pub trait DialogView {
     /// Render the dialog content; return `Some` to close the window.
     fn ui(&mut self, ui: &mut egui::Ui, tokens: &Tokens) -> Option<Outcome>;
 
+    /// Render the footer buttons. The ui is laid out right-to-left and
+    /// vertically centered inside the shell's footer bar, so the primary
+    /// button comes first.
+    fn footer(&mut self, ui: &mut egui::Ui, tokens: &Tokens) -> Option<Outcome>;
+
     /// Whether a data stream is still running (closing then means Cancel).
     fn stream_active(&self) -> bool {
         false
     }
 }
+
+/// Height of the shell-drawn footer bar holding the dialog buttons.
+const FOOTER_HEIGHT: f32 = 44.0;
 
 /// Static content resolved before the window opens, so that an unreadable
 /// --filename fails fast on stderr instead of flashing a window.
@@ -239,6 +247,35 @@ impl Shell {
         result
     }
 
+    /// Footer bar: an optionally sunken band at the bottom of the window
+    /// holding the dialog buttons.
+    fn footer_bar(&mut self, ui: &mut egui::Ui, rect: Rect, t: &Tokens) -> Option<Outcome> {
+        let bottom_radius = CornerRadius {
+            nw: 0,
+            ne: 0,
+            sw: t.window_radius.clamp(0.0, 255.0) as u8,
+            se: t.window_radius.clamp(0.0, 255.0) as u8,
+        };
+        ui.painter().rect_filled(rect, bottom_radius, t.footer_bg);
+        if t.footer_separator_width > 0.0 {
+            ui.painter().line_segment(
+                [rect.left_top(), rect.right_top()],
+                Stroke::new(t.footer_separator_width, t.footer_separator_color),
+            );
+        }
+
+        let inner = Rect::from_min_max(
+            egui::pos2(rect.left() + 12.0, rect.top()),
+            egui::pos2(rect.right() - 12.0, rect.bottom()),
+        );
+        let mut footer_ui = ui.new_child(
+            UiBuilder::new()
+                .max_rect(inner)
+                .layout(egui::Layout::right_to_left(egui::Align::Center)),
+        );
+        self.view.footer(&mut footer_ui, t)
+    }
+
     /// Borderless windows have no native resize border; emulate one with
     /// grip zones along the window edges.
     fn resize_grips(&self, ui: &egui::Ui, rect: Rect) {
@@ -366,13 +403,22 @@ impl eframe::App for Shell {
                 }
             }
 
+            let footer_rect = Rect::from_min_max(
+                egui::pos2(app_rect.left(), app_rect.bottom() - FOOTER_HEIGHT),
+                app_rect.max,
+            );
+
             let content_rect = Rect::from_min_max(
                 egui::pos2(app_rect.left(), app_rect.top() + titlebar_height),
-                app_rect.max,
+                egui::pos2(app_rect.right(), footer_rect.top()),
             )
             .shrink(t.window_padding);
             let mut content_ui = ui.new_child(UiBuilder::new().max_rect(content_rect));
             if let Some(outcome) = self.view.ui(&mut content_ui, &t) {
+                finish = Some(outcome);
+            }
+
+            if let Some(outcome) = self.footer_bar(ui, footer_rect, &t) {
                 finish = Some(outcome);
             }
 
