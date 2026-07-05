@@ -1,7 +1,7 @@
 use std::sync::mpsc::Receiver;
 
 use eframe::egui;
-use egui::{Button, CornerRadius, RichText, ScrollArea, Stroke, TextEdit};
+use egui::{Button, RichText, ScrollArea, TextEdit};
 
 use super::DialogView;
 use crate::exit::Outcome;
@@ -84,44 +84,36 @@ impl DialogView for TextInfoView {
     fn ui(&mut self, ui: &mut egui::Ui, t: &Tokens) -> Option<Outcome> {
         self.drain_source();
 
-        let frame = egui::Frame::new()
-            .fill(t.input_bg)
-            .stroke(Stroke::new(1.0, t.input_border_color))
-            .corner_radius(CornerRadius::same(t.input_radius.clamp(0.0, 255.0) as u8))
-            .inner_margin(12.0);
-
         let show_placeholder = self.content.is_empty() && self.initial.is_some();
 
+        // The content sits directly on the window background — the design
+        // draws no frame around it.
         ui.allocate_ui(ui.available_size(), |ui| {
-            frame.show(ui, |ui| {
-                ui.set_min_size(ui.available_size());
-                if show_placeholder {
-                    ui.label(
-                        RichText::new(self.initial.as_deref().unwrap_or_default()).color(t.muted),
-                    );
-                    return;
-                }
-                let scroll = if self.wrap {
-                    ScrollArea::vertical()
-                } else {
-                    ScrollArea::both()
-                };
-                scroll
-                    .auto_shrink(false)
-                    .stick_to_bottom(self.stick_to_bottom)
-                    .show(ui, |ui| {
-                        // Read-only TextEdit keeps the text selectable.
-                        let mut text = self.content.as_str();
-                        let edit = TextEdit::multiline(&mut text)
-                            .frame(egui::Frame::NONE)
-                            .desired_width(if self.wrap {
-                                ui.available_width()
-                            } else {
-                                f32::INFINITY
-                            });
-                        ui.add(edit);
-                    });
-            });
+            ui.set_min_size(ui.available_size());
+            if show_placeholder {
+                ui.label(RichText::new(self.initial.as_deref().unwrap_or_default()).color(t.muted));
+                return;
+            }
+            let scroll = if self.wrap {
+                ScrollArea::vertical()
+            } else {
+                ScrollArea::both()
+            };
+            scroll
+                .auto_shrink(false)
+                .stick_to_bottom(self.stick_to_bottom)
+                .show(ui, |ui| {
+                    // Read-only TextEdit keeps the text selectable.
+                    let mut text = self.content.as_str();
+                    let edit = TextEdit::multiline(&mut text)
+                        .frame(egui::Frame::NONE)
+                        .desired_width(if self.wrap {
+                            ui.available_width()
+                        } else {
+                            f32::INFINITY
+                        });
+                    ui.add(edit);
+                });
         });
 
         None
